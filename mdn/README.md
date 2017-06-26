@@ -1,0 +1,2 @@
+# Mixture Desity Networks
+This is a simple implementation of a mixture density network in tensorflow as shown by David Ha in his [blog](http://blog.otoro.net/2015/11/24/mixture-density-networks-with-tensorflow/).
