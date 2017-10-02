@@ -16,6 +16,7 @@ N_TEST_PER_CATEGORY = 200
 TRAIN_BATCH_SIZE = 50
 EPOCHS = 50
 MODEL_NAME = 'catdog'
+BINARY_INPUT = True
 
 logging.basicConfig(level=logging.DEBUG)
 training_data_loader = DataLoader(dataset_type='train', 
@@ -38,6 +39,10 @@ X_test_cat, y_test_cat = testing_data_loader.next_batch()
 
 X_test = np.concatenate((X_test_cat, X_test_dog))
 y_test = keras.utils.to_categorical(np.concatenate((y_test_cat, y_test_dog)), 2)
+
+if BINARY_INPUT:
+    X_train = (X_train > 50) * 1
+    X_test = (X_test > 50) * 1
 
 model = Sequential()
 
