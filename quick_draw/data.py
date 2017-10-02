@@ -100,7 +100,6 @@ class DataLoader(object):
 				dataset_base_url=QUICK_DRAW_BASE_URL,
 				categories_file=TESTING_DRAW_CATEGORIES_URL,
 				shuffle=False):
-		assert count_per_category % batch_size == 0
 
 		self.dataset_type = dataset_type
 		self.batch_size = batch_size
@@ -118,7 +117,8 @@ class DataLoader(object):
 		self.categories_url = {}
 		self.idx_to_categories = self.load_categories(categories_file)
 
-		assert batch_size * len(self.idx_to_categories) <= count_per_category
+		assert batch_size <= count_per_category * len(self.idx_to_categories)
+		assert (count_per_category * len(self.idx_to_categories)) % batch_size == 0
 
 		self.idx_category = 0
 		self.idx = 0
