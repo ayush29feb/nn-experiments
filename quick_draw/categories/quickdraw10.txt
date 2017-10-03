@@ -1,0 +1,10 @@
+cat
+dog
+airplane
+car
+apple
+ambulance
+arm
+cookie
+pizza
+wheel

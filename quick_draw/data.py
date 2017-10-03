@@ -201,7 +201,7 @@ class DataLoader(object):
 		category_ = category if not full else '%s.full' % category
 
 		if category_ not in self.categories_path and category_ not in self.categories_url:
-			raise ValueError(msg='Could not download category %s because if does not exist' % category_)
+			raise ValueError('Could not download category %s because if does not exist' % category_)
 
 		# download the data if don't have a local copy
 		if category_ not in self.categories_path:
