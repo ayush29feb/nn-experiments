@@ -1,0 +1,2 @@
+# XNOR-Net
+This is a implementation of the [XNOR-Net](https://arxiv.org/abs/1603.05279) completely written from scratch in numpy. I will be using both the [MNIST](http://yann.lecun.com/exdb/mnist/) dataset and the [CIFAR-10](https://www.cs.toronto.edu/~kriz/cifar.html) dataset for testing my implementation.
