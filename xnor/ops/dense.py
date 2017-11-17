@@ -33,3 +33,6 @@ class Dense2D(BaseOp):
         shape_w = (input_shape[1], self.hidden_units)
         shape_b = (self.hidden_units)
         return (np.random.randn(shape_w), np.random.randn(shape_b))
+
+    def get_output_shape(self, input_shape):
+        return (input_shape[0], self.hidden_units)

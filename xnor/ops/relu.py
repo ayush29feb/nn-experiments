@@ -16,3 +16,6 @@ class Relu(BaseOp):
 
     def get_initial_params(self, input_shape):
         return None
+
+    def get_output_shape(self, input_shape):
+        return input_shape
