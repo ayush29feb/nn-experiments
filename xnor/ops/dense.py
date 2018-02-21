@@ -1,6 +1,6 @@
-import numpy
+import numpy as np
 
-from base_op import BaseOp
+from base import BaseOp
 
 class Dense2D(BaseOp):
 
@@ -12,27 +12,27 @@ class Dense2D(BaseOp):
 
         w, b = params
         self.x = x
-        self.w = self.w
+        self.w = w
         return np.dot(x, w) + b
     
-    def backward(self, dout):
+    def backward(self, df):
         """
         Returns:
             dx: gradient for the input
             dparams: gradient for the respective params
         """
-        D = self.b.shape.reshape(-1)[0]
+        D = self.hidden_units
         N = self.x.shape[0]
     
-        dx = np.dot(dout, self.w.T)
-        dw = np.dot(self.x.T, dout.T)
-        db = np.dot(np.ones((D, N)), dout)
+        dx = np.dot(df, self.w.T)
+        dw = np.dot(self.x.T, df)
+        db = np.dot(np.ones((D, N)), df)
         return (dx, (dw, db))
 
     def get_initial_params(self, input_shape):
         shape_w = (input_shape[1], self.hidden_units)
-        shape_b = (self.hidden_units)
-        return (np.random.randn(shape_w), np.random.randn(shape_b))
+        shape_b = (self.hidden_units,)
+        return (np.random.randn(*shape_w), np.random.randn(*shape_b))
 
     def get_output_shape(self, input_shape):
         return (input_shape[0], self.hidden_units)

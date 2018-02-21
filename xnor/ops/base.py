@@ -10,7 +10,7 @@ class BaseOp:
         pass
     
     @abstractmethod
-    def backward(self, dout):
+    def backward(self, df):
         pass
 
     @abstractmethod
