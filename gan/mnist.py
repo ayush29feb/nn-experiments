@@ -10,8 +10,8 @@ from torch.autograd import Variable
 
 BATCH_SIZE = 32
 DATA_DIR = 'data'
-EPOCH = 1
-k = 1
+EPOCH = 10
+k = 2
 
 train_loader = torch.utils.data.DataLoader(
     datasets.MNIST(DATA_DIR, 
@@ -75,55 +75,42 @@ BCE_loss = nn.BCELoss()
 generator_losses = []
 discriminator_losses = []
 
-def generator_loss(z):
-    x_ = generator(z)
-    d_ = discriminator(x_)
-    y = Variable(torch.zeros(z.size(0)))
-    return BCE_loss(d_, y)
-
-def discriminator_loss(x, z):
-    d = discriminator(x)
-    y = Variable(torch.ones(x.size(0)))
-    loss_d = BCE_loss(d, y)
-    loss_g = generator_loss(z)
-    loss = torch.add(loss_d, loss_g)
-    return loss
-
 def train_discriminator(x, z):
     discriminator_optim.zero_grad()
-    loss = discriminator_loss(x, z)
+    d, d_ = discriminator(x), discriminator(generator(z))
+    y, y_ = Variable(torch.ones(z.size(0))), Variable(torch.zeros(z.size(0)))
+    loss = BCE_loss(d, y) + BCE_loss(d_, y_)
     discriminator_losses.append(loss.data[0])
     loss.backward()
     discriminator_optim.step()
 
 def train_generator(z):
     generator_optim.zero_grad()
-    loss = generator_loss(z)
+    d_ = discriminator(generator(z))
+    y_ = Variable(torch.zeros(z.size(0)))
+    loss = BCE_loss(d_, y_)
     generator_losses.append(loss.data[0])
     loss.backward()
     generator_optim.step()
 
 def train_epoch():
     for batch_idx, (x, _) in enumerate(train_loader):
-        x = Variable(x)
-        train_discriminator(x, Variable(torch.randn(x.size(0), 1, 28, 28)))
+        train_discriminator(Variable(x), Variable(torch.randn(x.size(0), 1, 28, 28)))
         if (batch_idx + 1) % k == 0:
             train_generator(Variable(torch.randn(x.size(0), 1, 28, 28)))
-        
-        if (batch_idx + 1) % 1000 == 0:
-            img = generator(Variable(torch.randn(1, 1, 28, 28)))
-            plt.imshow(img.data.numpy().reshape(28, 28) * 255, cmap='gray')
-            plt.show()
-        
-        if (batch_idx + 1) % 100 == 0:
-            plt.plot(generator_losses)
-            plt.plot(discriminator_losses[::2])
-            plt.show()
 
 def train():
     generator.train()
     discriminator.train()
     for e in range(EPOCH):
         train_epoch()
+        plt.plot(generator_losses, 'g')
+        plt.plot(discriminator_losses[::k], 'b')
+        plt.savefig('results/loss_%d.png' % e)
+        plt.close()
+        img = generator(Variable(torch.randn(1, 1, 28, 28)))
+        plt.imshow(img.data.numpy().reshape(28, 28) * 255, cmap='gray')
+        plt.savefig('results/test_%d.png' % e)
+        plt.close()
 
 train()
