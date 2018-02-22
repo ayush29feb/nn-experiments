@@ -61,3 +61,4 @@ compile_commands.json
 *.egg-info/
 
 data
+results

@@ -1,8 +1,12 @@
 import numpy as np
+import time
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
 import torch.optim as optim
+
+import matplotlib
+matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 
 from torchvision import datasets, transforms
@@ -24,7 +28,7 @@ train_loader = torch.utils.data.DataLoader(
                 transforms.ToTensor()
             ])),
     batch_size=BATCH_SIZE,
-    shuffle=True,
+    shuffle=False,
 )
 
 class Generator(nn.Module):
@@ -73,7 +77,10 @@ discriminator_losses = []
 def train_discriminator(x, z):
     discriminator_optim.zero_grad()
     d, d_ = discriminator(x), discriminator(generator(z))
-    y, y_ = Variable(torch.ones(z.size(0))), Variable(torch.zeros(z.size(0)))
+    y, y_ = torch.ones(z.size(0)), torch.zeros(z.size(0))
+    if use_cuda:
+        y, y_ = y.cuda(), y_.cuda()
+    y, y_ = Variable(y), Variable(y_)
     loss = BCE_loss(d, y) + BCE_loss(d_, y_)
     discriminator_losses.append(loss.data[0])
     loss.backward()
@@ -82,7 +89,10 @@ def train_discriminator(x, z):
 def train_generator(z):
     generator_optim.zero_grad()
     d_ = discriminator(generator(z))
-    y_ = Variable(torch.zeros(z.size(0)))
+    y_ = torch.zeros(z.size(0))
+    if use_cuda:
+        y_ = y_.cuda()
+    y_ = Variable(y_)
     loss = BCE_loss(d_, y_)
     generator_losses.append(loss.data[0])
     loss.backward()
@@ -109,8 +119,11 @@ def train():
         plt.plot(discriminator_losses[::k], 'b')
         plt.savefig('results/loss_%d.png' % e)
         plt.close()
-        img = generator(Variable(torch.randn(1, 1, 28, 28)))
-        plt.imshow(img.data.numpy().reshape(28, 28) * 255, cmap='gray')
+        z = torch.randn(1, 1, 28, 28)
+        if use_cuda:
+            z = z.cuda()
+        img = generator(Variable(z))
+        plt.imshow(img.cpu().data.numpy().reshape(28, 28), cmap='gray')
         plt.savefig('results/test_%d.png' % e)
         plt.close()
 
@@ -118,5 +131,6 @@ torch.manual_seed(1)
 if use_cuda:
     torch.cuda.manual_seed(1)
 
-
+start = time.time()
 train()
+print time.time() - start
