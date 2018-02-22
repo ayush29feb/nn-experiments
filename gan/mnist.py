@@ -11,23 +11,15 @@ from torch.autograd import Variable
 BATCH_SIZE = 32
 DATA_DIR = 'data'
 EPOCH = 10
+SEED = 1
 k = 2
 
-train_loader = torch.utils.data.DataLoader(
-    datasets.MNIST(DATA_DIR, 
-            train=True, 
-            download=True, 
-            transform=transforms.Compose([
-                transforms.ToTensor()
-            ])),
-    batch_size=BATCH_SIZE,
-    shuffle=True,
-)
+use_cuda = torch.cuda.is_available()
 
-test_loader = torch.utils.data.DataLoader(
-    datasets.MNIST(DATA_DIR, 
-            train=False, 
-            download=True, 
+train_loader = torch.utils.data.DataLoader(
+    datasets.MNIST(DATA_DIR,
+            train=True,
+            download=True,
             transform=transforms.Compose([
                 transforms.ToTensor()
             ])),
@@ -66,6 +58,9 @@ class Discriminator(nn.Module):
 
 generator = Generator()
 discriminator = Discriminator()
+if use_cuda:
+    generator.cuda()
+    discriminator.cuda()
 
 generator_optim = optim.SGD(generator.parameters(), lr = 0.0001, momentum=0.9)
 discriminator_optim = optim.SGD(discriminator.parameters(), lr = 0.0001, momentum=0.9)
@@ -95,9 +90,15 @@ def train_generator(z):
 
 def train_epoch():
     for batch_idx, (x, _) in enumerate(train_loader):
-        train_discriminator(Variable(x), Variable(torch.randn(x.size(0), 1, 28, 28)))
+        z = torch.randn(x.size(0), 1, 28, 28)
+        if use_cuda:
+            x, z = x.cuda(), z.cuda()
+        train_discriminator(Variable(x), Variable(z))
         if (batch_idx + 1) % k == 0:
-            train_generator(Variable(torch.randn(x.size(0), 1, 28, 28)))
+            z = torch.randn(x.size(0), 1, 28, 28)
+            if use_cuda:
+                z = z.cuda()
+            train_generator(Variable(z))
 
 def train():
     generator.train()
@@ -112,5 +113,10 @@ def train():
         plt.imshow(img.data.numpy().reshape(28, 28) * 255, cmap='gray')
         plt.savefig('results/test_%d.png' % e)
         plt.close()
+
+torch.manual_seed(1)
+if use_cuda:
+    torch.cuda.manual_seed(1)
+
 
 train()
