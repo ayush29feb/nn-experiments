@@ -1,3 +1,4 @@
+import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -17,8 +18,8 @@ class GAN:
                 batch_size=128,
                 num_epoch=100,
                 use_cuda=True):
-        self.generator = generator()
-        self.discriminator = discriminator()
+        self.generator = generator
+        self.discriminator = discriminator
         self.train_loader = train_loader
         self.dim_z = dim_z
         self.dim_out = dim_out
@@ -67,22 +68,23 @@ class GAN:
         return loss.data[0]
 
     def train_epoch(self):
-        d_loss, g_loss = None, None
+        d_loss, g_loss = [], []
         for batch_idx, (x, _) in enumerate(self.train_loader):
             z = torch.randn(x.size(0), self.dim_z)
             if self.use_cuda:
                 x, z = x.cuda(), z.cuda()
-            d_loss = self.train_discriminator(Variable(x), Variable(z))
+            d_loss.append(self.train_discriminator(Variable(x), Variable(z)))
             if (batch_idx + 1) % self.k == 0:
                 z = torch.randn(x.size(0), self.dim_z)
                 if self.use_cuda:
                     z = z.cuda()
-                g_loss = self.train_generator(Variable(z))
-        self.discriminator_losses.append(d_loss)
-        self.generator_losses.append(g_loss)
+                g_loss.append(self.train_generator(Variable(z)))
+        self.discriminator_losses.append(np.mean(np.array(d_loss)))
+        self.generator_losses.append(np.mean(np.array(g_loss)))
 
     def train(self):
         for step in range(self.num_epoch):
+            print 'Epoch %d' % step
             self.train_epoch()
     
     def get_losses(self):

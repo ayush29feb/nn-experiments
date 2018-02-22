@@ -32,7 +32,7 @@ train_loader = torch.utils.data.DataLoader(
     shuffle=True,
 )
 
-gan = GAN(Generator, Discriminator, train_loader, num_epoch=NUM_EPOCH)
+gan = GAN(Generator(), Discriminator(), train_loader, num_epoch=NUM_EPOCH)
 gan.train()
 torch.save(gan, 'gan-10.pt')
 generated_sampels = gan.sample(np.random.randn(10, 50))
