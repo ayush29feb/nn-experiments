@@ -17,7 +17,7 @@ DATA_DIR = 'data'
 EPOCH = 100
 SEED = 1
 k = 2
-Z_DIM = 500
+Z_DIM = 50
 IMG_DIM = 28 * 28
 
 use_cuda = torch.cuda.is_available()
@@ -44,9 +44,9 @@ class Generator(nn.Module):
 
     def forward(self, x):
         x = x.view(x.size(0), -1)
-        x = F.leaky_relu(self.fc1(x), 0)
-        x = F.leaky_relu(self.fc2(x), 0)
-        x = F.leaky_relu(self.fc3(x), 0)
+        x = F.relu(self.fc1(x))
+        x = F.relu(self.fc2(x))
+        x = F.relu(self.fc3(x))
         x = self.fc4(x)
         x = self.sigmoid(x)
         return x.view(-1, 1, 28, 28)
@@ -62,11 +62,11 @@ class Discriminator(nn.Module):
     
     def forward(self, x):
         x = x.view(x.size(0), -1)
-        x = F.leaky_relu(self.fc1(x), 0)
+        x = F.relu(self.fc1(x))
         x = F.dropout(x, 0.3)
-        x = F.leaky_relu(self.fc2(x), 0)
+        x = F.relu(self.fc2(x))
         x = F.dropout(x, 0.3)
-        x = F.leaky_relu(self.fc3(x), 0)
+        x = F.relu(self.fc3(x))
         x = F.dropout(x, 0.3)
         x = self.fc4(x)
         x = self.sigmoid(x)
@@ -127,8 +127,6 @@ def train_epoch():
             train_generator(Variable(z))
 
 def train():
-    generator.train()
-    discriminator.train()
     for e in range(EPOCH):
         print 'Step %d' % e
         train_epoch()
