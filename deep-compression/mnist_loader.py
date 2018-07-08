@@ -4,6 +4,7 @@ import logging
 import numpy as np
 import os
 import wget
+from layers import *
 
 DATA_URL = 'http://deeplearning.net/data/mnist/mnist.pkl.gz'
 FILENAME = 'mnist.pkl.gz'
