@@ -112,3 +112,5 @@ ENV/
 pyvenv.cfg
 .venv
 pip-selfcheck.json
+
+.DS_STORE
