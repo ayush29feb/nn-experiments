@@ -12,15 +12,15 @@ class Generator(nn.Module):
         self.fc2 = nn.Linear(256, 512)
         self.fc3 = nn.Linear(512, 1024)
         self.fc4 = nn.Linear(1024, IMG_DIM)
-        self.sigmoid = nn.Sigmoid()
+        self.tanh = nn.Tanh()
 
     def forward(self, x):
         x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
-        x = F.relu(self.fc2(x))
-        x = F.relu(self.fc3(x))
+        x = F.leaky_relu(self.fc1(x), 0.2)
+        x = F.leaky_relu(self.fc2(x), 0.2)
+        x = F.leaky_relu(self.fc3(x), 0.2)
         x = self.fc4(x)
-        x = self.sigmoid(x)
+        x = self.tanh(x)
         return x.view(-1, 1, 28, 28)
 
 class Discriminator(nn.Module):
@@ -34,11 +34,11 @@ class Discriminator(nn.Module):
     
     def forward(self, x):
         x = x.view(x.size(0), -1)
-        x = F.relu(self.fc1(x))
+        x = F.leaky_relu(self.fc1(x), 0.2)
         x = F.dropout(x, 0.3)
-        x = F.relu(self.fc2(x))
+        x = F.leaky_relu(self.fc2(x), 0.2)
         x = F.dropout(x, 0.3)
-        x = F.relu(self.fc3(x))
+        x = F.leaky_relu(self.fc3(x), 0.2)
         x = F.dropout(x, 0.3)
         x = self.fc4(x)
         x = self.sigmoid(x)

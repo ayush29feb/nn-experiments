@@ -42,6 +42,7 @@ class GAN:
     def train_discriminator(self, x, z):
         self.discriminator.train()
         self.generator.eval()
+        self.generator_optim.zero_grad()
         self.discriminator_optim.zero_grad()
         d, d_ = self.discriminator(x), self.discriminator(self.generator(z))
         y, y_ = torch.ones(z.size(0), 1), torch.zeros(z.size(0), 1)
@@ -57,6 +58,7 @@ class GAN:
         self.discriminator.eval()
         self.generator.train()
         self.generator_optim.zero_grad()
+        self.discriminator_optim.zero_grad()
         d_ = self.discriminator(self.generator(z))
         y_ = torch.ones(z.size(0), 1)
         if self.use_cuda:
@@ -84,8 +86,8 @@ class GAN:
 
     def train(self):
         for step in range(self.num_epoch):
-            print 'Epoch %d' % step
             self.train_epoch()
+            print 'Epoch %d: d_loss: %.8f, g_loss: %.8f' % (step, self.discriminator_losses[-1], self.generator_losses[-1])
     
     def get_losses(self):
         return (self.discriminator_losses, self.generator_losses)
