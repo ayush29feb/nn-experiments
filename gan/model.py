@@ -262,7 +262,7 @@ class GANModel(nn.Module):
                     plt.axis('off')
                     for i in range(1, w * h + 1):
                         fig.add_subplot(w,h,i)
-                        img = samples[i - 1].numpy()
+                        img = samples[i - 1]
                         img = (img + 1) / 2 * 255
                         img = np.moveaxis(img, 0, 2)
                         plt.imshow(img)
