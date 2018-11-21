@@ -290,7 +290,6 @@ class GANModel(nn.Module):
                     samples = self.sample(self._sample_size)
                     w = h = int(self._sample_size ** 0.5)
                     fig = plt.figure(figsize=(w, h))
-                    plt.axis('off')
                     for i in range(1, w * h + 1):
                         fig.add_subplot(w,h,i)
                         img = samples[i - 1].numpy()
@@ -298,6 +297,7 @@ class GANModel(nn.Module):
                         img = np.moveaxis(img, 0, 2)
                         if img.shape[2] == 1:
                             img = img.reshape(img.shape[0], img.shape[1])
+                        plt.axis('off')
                         plt.imshow(img)
                     self._logger.log_figure(figure_name='epoch-%s' % epoch)
                 
