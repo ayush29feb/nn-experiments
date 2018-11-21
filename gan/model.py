@@ -218,12 +218,7 @@ class GANModel(nn.Module):
         g_error.backward()
         self._g_optimizer.step()  # Only optimizes G's parameters
         
-        if self._use_cuda:
-            d_real_error = d_real_error.cpu()
-            d_fake_error = d_fake_error.cpu()
-            g_error = g_error.cpu()
-        
-        return (d_real_error.detach().numpy(), d_fake_error.detach().numpy(), g_error.detach().numpy())
+        return (d_real_error, d_fake_error, g_error)
 
     def _extract(self, v):
         return v.data.storage().tolist()
