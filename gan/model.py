@@ -45,8 +45,8 @@ class GANModel(nn.Module):
         self._G = G
         self._D = D
         self._z_dim = z_dim
-        self._model_path = model_path
-        self._logger = logger
+        self.model_path = model_path
+        self.logger = logger
         self._checkpoint_interval = checkpoint_interval
         
         self._num_epoch = num_epoch
@@ -108,7 +108,7 @@ class GANModel(nn.Module):
 
     @logger.setter
     def logger(self, value):
-        path = os.path.join(self._logger, value.id)
+        path = os.path.join(self._model_path, value.id)
         if not os.path.exists(path):
             os.makedirs(path)
             logging.info('Created Directory: %s' % path)
@@ -280,7 +280,7 @@ class GANModel(nn.Module):
                         'd_real_error': self._extract(d_real_error)[0],
                         'd_fake_error': self._extract(d_fake_error)[0],
                         'g_error': self._extract(g_error)[0]
-                    }, '%s.pt' % os.path.join(self._model_path, self._logger.id, epoch))
+                    }, os.path.join(self._model_path, self._logger.id, '%s.pt' % epoch))
                     
                     samples = self.sample(self._batch_size)
                     w = h = int(self._batch_size ** 0.5)
