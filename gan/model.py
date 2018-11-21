@@ -40,6 +40,7 @@ class GANModel(nn.Module):
                 d_lr=D_LEARNING_RATE,
                 g_beta1=G_BETA1,
                 d_beta1=D_BETA1,
+                sample_size=64,
                 use_cuda=GPU_AVAILABLE):
         super(GANModel, self).__init__()
         self._G = G
@@ -48,6 +49,7 @@ class GANModel(nn.Module):
         self.model_path = model_path
         self.logger = logger
         self._checkpoint_interval = checkpoint_interval
+        self._sample_size = sample_size
         
         self._num_epoch = num_epoch
         self._dataset = dataset
@@ -68,6 +70,8 @@ class GANModel(nn.Module):
         if self._use_cuda:
             self._G = self._G.cuda()
             self._D = self._D.cuda()
+
+        self._logger.log_multiple_params(locals())
 
     @property
     def z_dim(self):
@@ -265,10 +269,11 @@ class GANModel(nn.Module):
             for epoch in range(self._num_epoch):
                 d_real_error, d_fake_error, g_error = None, None, None
                 for i, (x, _) in enumerate(self._data_loader):
+                    step = len(self._data_loader) * epoch + i
                     d_real_error, d_fake_error, g_error = self._step(x)
-                    self._logger.log_metric('d_real_error', self._extract(d_real_error)[0], step=i)
-                    self._logger.log_metric('d_fake_error', self._extract(d_fake_error)[0], step=i)
-                    self._logger.log_metric('g_error', self._extract(g_error)[0], step=i)
+                    self._logger.log_metric('d_real_error', self._extract(d_real_error)[0], step=step)
+                    self._logger.log_metric('d_fake_error', self._extract(d_fake_error)[0], step=step)
+                    self._logger.log_metric('g_error', self._extract(g_error)[0], step=step)
                 
                 if epoch % self._checkpoint_interval == 0:
                     torch.save({
@@ -282,8 +287,8 @@ class GANModel(nn.Module):
                         'g_error': self._extract(g_error)[0]
                     }, os.path.join(self._model_path, self._logger.id, '%s.pt' % epoch))
                     
-                    samples = self.sample(self._batch_size)
-                    w = h = int(self._batch_size ** 0.5)
+                    samples = self.sample(self._sample_size)
+                    w = h = int(self._sample_size ** 0.5)
                     fig = plt.figure(figsize=(w, h))
                     plt.axis('off')
                     for i in range(1, w * h + 1):
