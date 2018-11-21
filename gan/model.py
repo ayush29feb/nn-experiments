@@ -1,6 +1,8 @@
 import logging
 import matplotlib.pyplot as plt
 import numpy as np
+import numbers
+import os
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
@@ -8,7 +10,6 @@ import torch.optim as optim
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
 import types
-import numbers
 
 from torch.utils.data import Dataset, DataLoader
 from torch.autograd import Variable
@@ -85,10 +86,33 @@ class GANModel(nn.Module):
     @dataset.setter
     def dataset(self, value):
         if not isinstance(value, Dataset):
-            raise ValueError('The ')
+            raise ValueError('The dataset should of type torch.utils.data.Dataset')
         self._dataset = value
         self._init_data_loader()
         logging.info('Reinitialized the data loader with the updated batch size property')
+
+    @property
+    def model_path(self):
+        return self._model_path
+
+    @model_path.setter
+    def model_path(self, value):
+        if not os.path.exists(value):
+            os.makedirs(value)
+            logging.info('Created Directory: %s' % value)
+        self._model_path = value
+    
+    @property
+    def logger(self):
+        return self._logger
+
+    @logger.setter
+    def logger(self, value):
+        path = os.path.join(self._logger, value.id)
+        if not os.path.exists(path):
+            os.makedirs(path)
+            logging.info('Created Directory: %s' % path)
+        self._logger = value
 
     @property
     def batch_size(self):
@@ -157,6 +181,8 @@ class GANModel(nn.Module):
             raise ValueError('d_beta1 must be a number between 0 and 1')
         self._d_beta1 = value
         self._init_optimizers(g=False, d=True)
+
+
 
     def _init_optimizers(self, g=True, d=True):
         # TODO: support any optimizer
@@ -230,7 +256,7 @@ class GANModel(nn.Module):
         x = self._G(z).detach()
         if self._use_cuda:
             x = x.cpu()
-        return x.numpy()
+        return x
 
     def train(self):
         # TODO: Logging Abstraction. Add a layer of indirection for logging.
@@ -254,7 +280,7 @@ class GANModel(nn.Module):
                         'd_real_error': self._extract(d_real_error)[0],
                         'd_fake_error': self._extract(d_fake_error)[0],
                         'g_error': self._extract(g_error)[0]
-                    }, '%s/%s/%s.pt' % (self._model_path, self._logger.id, epoch))
+                    }, '%s.pt' % os.path.join(self._model_path, self._logger.id, epoch))
                     
                     samples = self.sample(self._batch_size)
                     w = h = int(self._batch_size ** 0.5)
@@ -262,9 +288,11 @@ class GANModel(nn.Module):
                     plt.axis('off')
                     for i in range(1, w * h + 1):
                         fig.add_subplot(w,h,i)
-                        img = samples[i - 1]
+                        img = samples[i - 1].numpy()
                         img = (img + 1) / 2 * 255
                         img = np.moveaxis(img, 0, 2)
+                        if img.shape[2] == 1:
+                            img = img.reshape(img.shape[0], img.shape[1])
                         plt.imshow(img)
                     self._logger.log_figure(figure_name='epoch-%s' % epoch)
                 
