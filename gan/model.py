@@ -64,6 +64,10 @@ class GANModel(nn.Module):
         self._init_data_loader()
         self._init_optimizers()
 
+        if self._use_cuda:
+            self._G = self._G.cuda()
+            self._D = self._D.cuda()
+
     @property
     def z_dim(self):
         return self._z_dim
