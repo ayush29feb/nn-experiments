@@ -223,7 +223,7 @@ class GANModel(nn.Module):
             d_fake_error = d_fake_error.cpu()
             g_error = g_error.cpu()
         
-        return (d_real_error.numpy(), d_fake_error.numpy(), g_error.numpy())
+        return (d_real_error.detach().numpy(), d_fake_error.detach().numpy(), g_error.detach().numpy())
 
     def _extract(self, v):
         return v.data.storage().tolist()
