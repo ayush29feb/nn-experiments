@@ -278,8 +278,8 @@ class GANModel(nn.Module):
                         self._logger.log_metric('d_real_error', self._extract(d_real_error)[0], step=step)
                         self._logger.log_metric('d_fake_error', self._extract(d_fake_error)[0], step=step)
                         self._logger.log_metric('g_error', self._extract(g_error)[0], step=step)
-                        self._logger.log_multiple_metric(self._G.stats(), step=step)
-                        self._logger.log_multiple_metric(self._D.stats(), step=step)
+                        self._logger.log_multiple_metrics(self._G.stats(), step=step)
+                        self._logger.log_multiple_metrics(self._D.stats(), step=step)
                 
                 if epoch % self._checkpoint_interval == 0:
                     torch.save({
