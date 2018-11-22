@@ -26,6 +26,7 @@ class GANModel(nn.Module):
     Z_DIM = 100
     NUM_EPOCH=20
     CHECKPOINT_INTERVAL=1
+    LOGGING_STEP_SIZE=10
 
     def __init__(self, G, D, 
                 model_path,
@@ -33,6 +34,7 @@ class GANModel(nn.Module):
                 z_dim=Z_DIM,
                 num_epoch=NUM_EPOCH,
                 checkpoint_interval=CHECKPOINT_INTERVAL,
+                logging_step_size=LOGGING_STEP_SIZE,
                 dataset=None,
                 batch_size=BATCH_SIZE,
                 shuffle=SHUFFLE,
@@ -49,6 +51,7 @@ class GANModel(nn.Module):
         self.model_path = model_path
         self.logger = logger
         self._checkpoint_interval = checkpoint_interval
+        self._logging_step_size = logging_step_size
         self._sample_size = sample_size
         
         self._num_epoch = num_epoch
@@ -262,18 +265,21 @@ class GANModel(nn.Module):
             x = x.cpu()
         return x
 
-    def train(self):
+    def train(self, start_epoch=0):
         # TODO: Logging Abstraction. Add a layer of indirection for logging.
         #       Currently using comet.ml experiment directly
         with self._logger.train():
-            for epoch in range(self._num_epoch):
+            for epoch in range(start_epoch, self._num_epoch):
                 d_real_error, d_fake_error, g_error = None, None, None
                 for i, (x, _) in enumerate(self._data_loader):
                     step = len(self._data_loader) * epoch + i
                     d_real_error, d_fake_error, g_error = self._step(x)
-                    self._logger.log_metric('d_real_error', self._extract(d_real_error)[0], step=step)
-                    self._logger.log_metric('d_fake_error', self._extract(d_fake_error)[0], step=step)
-                    self._logger.log_metric('g_error', self._extract(g_error)[0], step=step)
+                    if step % self._logging_step_size == 0:
+                        self._logger.log_metric('d_real_error', self._extract(d_real_error)[0], step=step)
+                        self._logger.log_metric('d_fake_error', self._extract(d_fake_error)[0], step=step)
+                        self._logger.log_metric('g_error', self._extract(g_error)[0], step=step)
+                        self._logger.log_multiple_metric(self._G.stats(), step=step)
+                        self._logger.log_multiple_metric(self._D.stats(), step=step)
                 
                 if epoch % self._checkpoint_interval == 0:
                     torch.save({
