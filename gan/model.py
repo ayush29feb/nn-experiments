@@ -219,8 +219,8 @@ class GANModel(nn.Module):
 
         #  1B: Train D on fake
         d_z = torch.randn(batch_size, self._z_dim, device=self._device)
-        fake_data = self._G(d_z).detach()  # detach to avoid training G on these labels
-        d_fake_decision = self._D(fake_data)
+        fake_data = self._G(d_z)  
+        d_fake_decision = self._D(fake_data.detach()) # detach to avoid training G on these labels
         d_fake_error = self._criterion(d_fake_decision, fake_labels)
         
         d_fake_error.backward()
@@ -230,7 +230,7 @@ class GANModel(nn.Module):
         self._G.zero_grad()
 
         dg_fake_decision = self._D(fake_data)
-        g_error = self._criterion(dg_fake_decision, fake_labels)  # we want to fool, so pretend it's all genuine
+        g_error = self._criterion(dg_fake_decision, real_labels)  # we want to fool, so pretend it's all genuine
         g_error.backward()
         self._g_optimizer.step()  # Only optimizes G's parameters
         
