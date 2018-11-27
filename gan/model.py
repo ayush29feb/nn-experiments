@@ -256,7 +256,7 @@ class GANModel(nn.Module):
                     step = len(self._data_loader) * epoch + i
                     d_real_error, d_fake_error, g_error, d_real_decision, d_fake_decision, dg_fake_decision = self._step(x)
                     if step % self._logging_step_size == 0:
-                        self._logger.log_metric(d_real_error', d_real_error, step=step)
+                        self._logger.log_metric('d_real_error', d_real_error, step=step)
                         self._logger.log_metric('d_fake_error', d_fake_error, step=step)
                         self._logger.log_metric('g_error', g_error, step=step)
                         self._logger.log_metric('d_real_decision', d_real_decision, step=step)
