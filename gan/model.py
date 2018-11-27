@@ -66,13 +66,14 @@ class GANModel(nn.Module):
         
         self._criterion = nn.BCELoss()
         
-        self._use_cuda = use_cuda
+        self._device = torch.device("cuda:0" if use_cuda else "cpu")
+        self._G.to(self._device)
+        self._D.to(self._device)
+
         self._init_data_loader()
         self._init_optimizers()
 
-        if self._use_cuda:
-            self._G = self._G.cuda()
-            self._D = self._D.cuda()
+        self._fixed_z = torch.randn(self._sample_size, self._z_dim, device=self._device)
 
         self._logger.log_multiple_params(locals())
 
@@ -189,8 +190,6 @@ class GANModel(nn.Module):
         self._d_beta1 = value
         self._init_optimizers(g=False, d=True)
 
-
-
     def _init_optimizers(self, g=True, d=True):
         # TODO: support any optimizer
         if g:
@@ -202,67 +201,49 @@ class GANModel(nn.Module):
         self._data_loader = DataLoader(dataset=self._dataset,
             batch_size=self._batch_size,
             shuffle=self._shuffle,
-            drop_last=True)
+            drop_last=False)
 
     def _step(self, x):
-        if self._use_cuda:
-            x = x.cuda()
         
         # 1. Train D on real+fake
         self._D.zero_grad()
+        real_data = x.to(self._device)
+        batch_size = real_data.size(0)
+        real_labels = torch.ones(batch_size, device=self._device) # ones = true
+        fake_labels = torch.zeros(batch_size, device=self._device) # zeros = fake
 
         # 1A: Train D on real
-        d_real_data = Variable(x)
-        d_real_decision = self._D(d_real_data)
-        d_real_labels = torch.ones(self._batch_size) # ones = true
-        if self._use_cuda:
-            d_real_labels = d_real_labels.cuda()
-        d_real_error = self._criterion(d_real_decision, Variable(d_real_labels))  
+        d_real_decision = self._D(real_data)
+        d_real_error = self._criterion(d_real_decision, real_labels)
         d_real_error.backward() # compute/store gradients, but don't change params
 
         #  1B: Train D on fake
-        d_z = torch.randn(self._batch_size, self._z_dim)
-        if self._use_cuda:
-            d_z = d_z.cuda()
-        d_gen_input = Variable(d_z)
-        d_fake_data = self._G(d_gen_input).detach()  # detach to avoid training G on these labels
-        d_fake_decision = self._D(d_fake_data)
-        d_fake_labels = torch.zeros(self._batch_size) # zeros = fake
-        if self._use_cuda:
-            d_fake_labels = d_fake_labels.cuda()
-        d_fake_error = self._criterion(d_fake_decision, Variable(d_fake_labels)) 
+        d_z = torch.randn(batch_size, self._z_dim, deice=self._device)
+        fake_data = self._G(d_z).detach()  # detach to avoid training G on these labels
+        d_fake_decision = self._D(fake_data)
+        d_fake_error = self._criterion(d_fake_decision, fake_labels)
+        
         d_fake_error.backward()
         self._d_optimizer.step()     # Only optimizes D's parameters; changes based on stored gradients from backward()
 
         # 2. Train G on D's response (but DO NOT train D on these labels)
         self._G.zero_grad()
 
-        g_z = torch.randn(self._batch_size, self._z_dim)
-        if self._use_cuda:
-            g_z = g_z.cuda()
-        gen_input = Variable(g_z)
-        g_fake_data = self._G(gen_input)
-        dg_fake_decision = self._D(g_fake_data)
-        dg_fake_labels = torch.ones(self._batch_size)
-        if self._use_cuda:
-            dg_fake_labels = dg_fake_labels.cuda()
-        g_error = self._criterion(dg_fake_decision, Variable(dg_fake_labels))  # we want to fool, so pretend it's all genuine
-
+        dg_fake_decision = self._D(fake_data)
+        g_error = self._criterion(dg_fake_decision, fake_labels)  # we want to fool, so pretend it's all genuine
         g_error.backward()
         self._g_optimizer.step()  # Only optimizes G's parameters
         
-        return (d_real_error, d_fake_error, g_error)
-
-    def _extract(self, v):
-        return v.data.storage().tolist()
+        return (d_real_error.item(),
+                d_fake_error.item(),
+                g_error.item(),
+                d_real_decision.mean().item(),
+                d_fake_decision.mean().item(), 
+                dg_fake_decision.mean().item())
 
     def sample(self, n):
-        z = torch.randn(n, self._z_dim)
-        if self._use_cuda:
-            z = z.cuda()
+        z = torch.randn(n, self._z_dim, device=self._device)
         x = self._G(z).detach()
-        if self._use_cuda:
-            x = x.cpu()
         return x
 
     def train(self, start_epoch=0):
@@ -273,11 +254,14 @@ class GANModel(nn.Module):
                 d_real_error, d_fake_error, g_error = None, None, None
                 for i, (x, _) in enumerate(self._data_loader):
                     step = len(self._data_loader) * epoch + i
-                    d_real_error, d_fake_error, g_error = self._step(x)
+                    d_real_error, d_fake_error, g_error, d_real_decision, d_fake_decision, dg_fake_decision = self._step(x)
                     if step % self._logging_step_size == 0:
-                        self._logger.log_metric('d_real_error', self._extract(d_real_error)[0], step=step)
-                        self._logger.log_metric('d_fake_error', self._extract(d_fake_error)[0], step=step)
-                        self._logger.log_metric('g_error', self._extract(g_error)[0], step=step)
+                        self._logger.log_metric(d_real_error', d_real_error, step=step)
+                        self._logger.log_metric('d_fake_error', d_fake_error, step=step)
+                        self._logger.log_metric('g_error', g_error, step=step)
+                        self._logger.log_metric('d_real_decision', d_real_decision, step=step)
+                        self._logger.log_metric('d_fake_decision', d_fake_decision, step=step)
+                        self._logger.log_metric('dg_fake_decision', dg_fake_decision, step=step)
                         self._logger.log_multiple_metrics(self._G.stats(), step=step)
                         self._logger.log_multiple_metrics(self._D.stats(), step=step)
                 
@@ -288,12 +272,12 @@ class GANModel(nn.Module):
                         'd_model': self._D.state_dict(),
                         'g_optim': self._g_optimizer.state_dict(),
                         'd_optim': self._d_optimizer.state_dict(),
-                        'd_real_error': self._extract(d_real_error)[0],
-                        'd_fake_error': self._extract(d_fake_error)[0],
-                        'g_error': self._extract(g_error)[0]
+                        'd_real_error': d_real_error,
+                        'd_fake_error': d_fake_error,
+                        'g_error': g_error
                     }, os.path.join(self._model_path, self._logger.id, '%s.pt' % epoch))
                     
-                    samples = self.sample(self._sample_size)
+                    samples = self._G(self._fixed_z).detach().to('cpu')
                     w = h = int(self._sample_size ** 0.5)
                     fig = plt.figure(figsize=(w, h))
                     for i in range(1, w * h + 1):
