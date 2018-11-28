@@ -243,7 +243,7 @@ class GANModel(nn.Module):
                 dg_fake_decision.mean().item())
 
     def sample(self, n):
-        z = torch.randn(n, self._z_dim, device=self._device)
+        z = torch.randn(n, self._z_dim, 1, 1, device=self._device)
         x = self._G(z).detach()
         return x
 
