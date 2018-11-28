@@ -74,7 +74,7 @@ class GANModel(nn.Module):
         self._init_data_loader()
         self._init_optimizers()
 
-        self._fixed_z = torch.randn(self._sample_size, self._z_dim, device=self._device)
+        self._fixed_z = torch.randn(self._sample_size, self._z_dim, 1, 1, device=self._device)
 
         self._logger.log_multiple_params(locals())
 
@@ -219,7 +219,7 @@ class GANModel(nn.Module):
         d_real_error.backward() # compute/store gradients, but don't change params
 
         #  1B: Train D on fake
-        d_z = torch.randn(batch_size, self._z_dim, device=self._device)
+        d_z = torch.randn(batch_size, self._z_dim, 1, 1, device=self._device)
         fake_data = self._G(d_z)  
         d_fake_decision = self._D(fake_data.detach()) # detach to avoid training G on these labels
         d_fake_error = self._criterion(d_fake_decision, fake_labels)
