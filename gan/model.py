@@ -279,7 +279,7 @@ class GANModel(nn.Module):
                     }, os.path.join(self._model_path, self._logger.id, '%s.pt' % epoch))
                     
                     samples = self._G(self._fixed_z).detach().to('cpu')
-                    img = vutils.make_grid(samples).numpy()
+                    img = vutils.make_grid(samples, normalize=True).numpy()
                     img = np.transpose(img, (1, 2, 0))
                     plt.axis('off')
                     plt.imshow(img)
