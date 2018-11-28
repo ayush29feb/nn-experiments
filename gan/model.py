@@ -30,13 +30,13 @@ class GANModel(nn.Module):
     LOGGING_STEP_SIZE=10
 
     def __init__(self, G, D, 
+                data_loader,
                 model_path,
                 logger, # TODO: Make this optional by creating an empty base logging class
                 z_dim=Z_DIM,
                 num_epoch=NUM_EPOCH,
                 checkpoint_interval=CHECKPOINT_INTERVAL,
                 logging_step_size=LOGGING_STEP_SIZE,
-                dataset=None,
                 batch_size=BATCH_SIZE,
                 shuffle=SHUFFLE,
                 g_lr=G_LEARNING_RATE,
@@ -49,14 +49,11 @@ class GANModel(nn.Module):
         self._G = G
         self._D = D
         self._z_dim = z_dim
-        self.model_path = model_path
-        self.logger = logger
         self._checkpoint_interval = checkpoint_interval
         self._logging_step_size = logging_step_size
         self._sample_size = sample_size
-        
         self._num_epoch = num_epoch
-        self._dataset = dataset
+        self._data_loader = data_loader
         self._batch_size = batch_size
         self._shuffle = shuffle
 
@@ -71,34 +68,14 @@ class GANModel(nn.Module):
         self._G.to(self._device)
         self._D.to(self._device)
 
-        self._init_data_loader()
+        self.model_path = model_path
+        self.logger = logger
+        
         self._init_optimizers()
 
         self._fixed_z = torch.randn(self._sample_size, self._z_dim, 1, 1, device=self._device)
 
         self._logger.log_multiple_params(locals())
-
-    @property
-    def z_dim(self):
-        return self._z_dim
-
-    @z_dim.setter
-    def z_dim(self, value):
-        if not value.is_integer() or value <= 0:
-            raise ValueError('z_dim must be a positive integer')
-        self._z_dim = int(value)
-
-    @property
-    def dataset(self):
-        return self._dataset
-
-    @dataset.setter
-    def dataset(self, value):
-        if not isinstance(value, Dataset):
-            raise ValueError('The dataset should of type torch.utils.data.Dataset')
-        self._dataset = value
-        self._init_data_loader()
-        logging.info('Reinitialized the data loader with the updated batch size property')
 
     @property
     def model_path(self):
@@ -123,86 +100,12 @@ class GANModel(nn.Module):
             logging.info('Created Directory: %s' % path)
         self._logger = value
 
-    @property
-    def batch_size(self):
-        return self._batch_size
-
-    @batch_size.setter
-    def batch_size(self, value):
-        if not value.is_integer() or value <= 0:
-            raise ValueError('batch_size must be a positive integer')
-        self._batch_size = int(value)
-        self._init_data_loader()
-        logging.info('Reinitialized the data loader with the updated batch size property')
-
-    @property
-    def shuffle(self):
-        return self._shuffle
-    
-    @shuffle.setter
-    def shuffle(self, value):
-        if type(value) != types.BooleanType:
-            raise ValueError('shuffle must be a boolean')
-        self._shuffle = value
-        self._init_data_loader()
-        logging.info('Reinitialized the data loader with the updated shuffle property')
-
-    @property
-    def g_lr(self):
-        return self._g_lr
-
-    @g_lr.setter
-    def g_lr(self, value):
-        if not isinstance(value, numbers.Number) or value <= 0:
-            raise ValueError('g_lr must be a positive number')
-        self._g_lr = value
-        self._init_optimizers(g=True, d=False)
-
-    @property
-    def d_lr(self):
-        return self._d_lr
-
-    @d_lr.setter
-    def d_lr(self, value):
-        if not isinstance(value, numbers.Number) or value <= 0:
-            raise ValueError('d_lr must be a positive number')
-        self._d_lr = value
-        self._init_optimizers(g=False, d=True)
-
-    @property
-    def g_beta1(self):
-        return self._g_lr
-
-    @g_beta1.setter
-    def g_beta1(self, value):
-        if not isinstance(value, numbers.Number) or value <= 0 or value > 1:
-            raise ValueError('g_beta1 must be a number between 0 and 1')
-        self._g_beta1 = value
-        self._init_optimizers(g=True, d=False)
-
-    @property
-    def d_beta1(self):
-        return self._g_lr
-
-    @d_beta1.setter
-    def d_beta1(self, value):
-        if not isinstance(value, numbers.Number) or value <= 0 or value > 1:
-            raise ValueError('d_beta1 must be a number between 0 and 1')
-        self._d_beta1 = value
-        self._init_optimizers(g=False, d=True)
-
     def _init_optimizers(self, g=True, d=True):
         # TODO: support any optimizer
         if g:
             self._d_optimizer = optim.Adam(self._D.parameters(), lr=self._d_lr, betas=(self._d_beta1, 0.999))
         if d:
             self._g_optimizer = optim.Adam(self._G.parameters(), lr=self._g_lr, betas=(self._g_beta1, 0.999))
-
-    def _init_data_loader(self):
-        self._data_loader = DataLoader(dataset=self._dataset,
-            batch_size=self._batch_size,
-            shuffle=self._shuffle,
-            drop_last=False)
 
     def _step(self, x):
         
