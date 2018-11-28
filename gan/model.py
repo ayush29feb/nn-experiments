@@ -75,7 +75,7 @@ class GANModel(nn.Module):
 
         self._fixed_z = torch.randn(self._sample_size, self._z_dim, 1, 1, device=self._device)
 
-        self._logger.log_multiple_params(locals())
+        # self._logger.log_multiple_params(locals())
 
     @property
     def model_path(self):
