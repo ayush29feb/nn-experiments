@@ -9,6 +9,7 @@ import torch.nn.functional as F
 import torch.optim as optim
 import torchvision.datasets as datasets
 import torchvision.transforms as transforms
+import torchvision.utils as vutils
 import types
 
 from torch.utils.data import Dataset, DataLoader
@@ -278,17 +279,10 @@ class GANModel(nn.Module):
                     }, os.path.join(self._model_path, self._logger.id, '%s.pt' % epoch))
                     
                     samples = self._G(self._fixed_z).detach().to('cpu')
-                    w = h = int(self._sample_size ** 0.5)
-                    fig = plt.figure(figsize=(w, h))
-                    for i in range(1, w * h + 1):
-                        fig.add_subplot(w,h,i)
-                        img = samples[i - 1].numpy()
-                        img = (img + 1) / 2 * 255
-                        img = np.moveaxis(img, 0, 2)
-                        if img.shape[2] == 1:
-                            img = img.reshape(img.shape[0], img.shape[1])
-                        plt.axis('off')
-                        plt.imshow(img)
+                    img = vutils.make_grid(samples).numpy()
+                    img = np.transpose(img, (1, 2, 0))
+                    plt.axis('off')
+                    plt.imshow(img)
                     self._logger.log_figure(figure_name='epoch-%s' % epoch)
                 
                 self._logger.log_epoch_end(epoch)
